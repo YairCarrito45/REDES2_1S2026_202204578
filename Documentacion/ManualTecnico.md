@@ -159,12 +159,179 @@ Los nombres siguen la convención requerida: `VLAN_[Color]_Edificio[IZQ/DER]_[Ca
 | 30 | VLAN_Naranja_EdificioDER_202204578 | Proyectos | Derecho |
 | 40 | VLAN_Verde_EdificioDER_202204578 | Coordinación | Derecho |
 | 99 | VLAN_ADMIN_202204578 | Administración | Admin |
-
 ---
 
 ## VTP - VLAN Trunking Protocol
 
 VTP permite sincronizar automáticamente la configuración de VLANs entre todos los switches del dominio, evitando configurarlas manualmente en cada dispositivo.
+
+## Configuracion Vlans
+
+**configuracion MS1 Vlan**
+```
+enable
+configure terminal
+
+vlan 10 
+name VLAN_Naranja_EdificioIZQ_202204578
+exit
+
+vlan 20
+name VLAN_Verde_EdificioIZQ_202204578
+
+vlan 30
+name VLAN_Naranja_EdificioDER_202204578
+exit
+
+vlan 40
+name VLAN_Verde_EdificioDER_202204578
+exit
+
+vlan 99
+name VLAN_ADMIN_202204578
+exit
+
+end
+write memory
+
+```
+
+
+### trunks por switch
+**MS1 a DCHP1, DHCP2, MS7 Y MS2**
+```
+interface gigabitEthernet 1/1/2
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+
+interface gigabitEthernet 1/1/1  ← hacia MS2
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+
+! Hacia DHCP1
+interface gigabitEthernet 1/0/1
+switchport mode access
+switchport access vlan 99
+no shutdown
+exit
+
+! Hacia DHCP2
+interface gigabitEthernet 1/0/2
+switchport mode access
+switchport access vlan 99
+no shutdown
+exit
+```
+
+**MS7 a MS1, MS2, MS6, MS9 Y MS8**
+```
+enable
+configure terminal
+
+! Hacia MS1 (Red MAN)
+interface gigabitEthernet 1/1/2
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia MS2 (Red MAN)
+interface gigabitEthernet 1/1/3
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia MS6 (Red MAN)
+interface gigabitEthernet 1/1/1
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia MS9 (Edificio Izquierdo)
+interface gigabitEthernet X/X/X
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia MS8 (Edificio Izquierdo)
+interface gigabitEthernet X/X/X
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+end
+write memory
+```
+
+**MS2 a MS6, MS1, MS7, MS3**
+
+```
+
+enable
+configure terminal
+interface gigabitEthernet 1/1/1
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+interface gigabitEthernet 1/1/2
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+interface gigabitEthernet 1/1/3
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+exit
+write memory
+```
+
+**MS6 a MS2, MS7**
+```
+enable
+configure terminal
+interface gigabitEthernet 1/1/1
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+
+interface gigabitEthernet 1/1/2
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+
+! Hacia PC0 → access VLAN 99 Admin
+interface GigabitEthernet1/0/10
+switchport mode access
+switchport access vlan 99
+no shutdown
+exit
+
+
+
+exit
+write memory
+
+```
 
 ### Configuración VTP
 
@@ -178,9 +345,8 @@ VTP permite sincronizar automáticamente la configuración de VLANs entre todos 
 
 | Switch | Rol VTP | Motivo |
 |--------|---------|--------|
-| MS1 | **Server** | Switch central, propaga VLANs a toda la red |
-| MS7, MS2, MS6 | Client | Switches MAN, reciben VLANs |
-| MS9, MS8, MS4, MS5 | Client | Switches internos de edificios |
+| MS1 ,MS7, MS2, | **Server** | Switch central, propaga VLANs a toda la red |
+| MS9, MS8, MS4, MS5, MS6| Client | Switches internos de edificios |
 | SW1, SW2, SW3, SW4 | Client | Switches de acceso |
 
 ### Comandos VTP
@@ -198,24 +364,13 @@ end
 write memory
 ```
 
-**En todos los demás switches (Clientes):**
-```
-enable
-configure terminal
-vtp mode client
-vtp domain ChapinRed
-vtp password chapin123
-vtp version 2
-end
-write memory
-```
 
-**En MS7 (cliente)**
+**En MS7 (Servidor)**
 ```
 enable
 configure terminal
 hostname MS7
-vtp mode client
+vtp mode server
 vtp domain ChapinRed
 vtp password chapin123
 vtp version 2
@@ -224,12 +379,12 @@ write memory
 ```
 
 
-**En MS2 (cliente)**
+**En MS2 (Servidor)**
 ```
 enable
 configure terminal
 hostname MS2
-vtp mode client
+vtp mode server
 vtp domain ChapinRed
 vtp password chapin123
 vtp version 2
@@ -382,32 +537,368 @@ La agregación de enlaces combina múltiples conexiones físicas en un único en
 
 LACP (Link Aggregation Control Protocol) es el estándar IEEE 802.3ad, compatible con cualquier fabricante.
 
+
+### COMANDO LACP
+
+**MS9**
 ```
+enable
 configure terminal
-interface range GigabitEthernet1/0/X - Y
-channel-group [N] mode active
+
+! Hacia MS7 → channel-group 1
+interface range GigabitEthernet1/0/1 - 3
+channel-group 1 mode active
+no shutdown
+exit
+interface port-channel 1
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
 no shutdown
 exit
 
-interface port-channel [N]
+! Hacia MS8 → channel-group 3
+interface range GigabitEthernet1/0/7 - 9
+channel-group 3 mode active
+no shutdown
+exit
+interface port-channel 3
 switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia SW1 → channel-group 5
+interface range GigabitEthernet1/0/4 - 5
+channel-group 5 mode active
+no shutdown
+exit
+interface port-channel 5
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
 end
 write memory
 ```
 
+
+**MS7**
+```
+enable
+configure terminal
+
+! Hacia MS9 → channel-group 1
+interface range GigabitEthernet1/0/1 - 3
+channel-group 1 mode active
+no shutdown
+exit
+interface port-channel 1
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia MS8 → channel-group 2
+interface range GigabitEthernet1/0/4 - 6
+channel-group 2 mode active
+no shutdown
+exit
+interface port-channel 2
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+end
+write memory
+```
+
+**MS8**
+```
+enable
+configure terminal
+
+! Hacia MS9 → channel-group 3
+interface range GigabitEthernet1/0/7 - 9
+channel-group 3 mode active
+no shutdown
+exit
+interface port-channel 3
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia MS7 → channel-group 2
+interface range GigabitEthernet1/0/4 - 6
+channel-group 2 mode active
+no shutdown
+exit
+interface port-channel 2
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia SW2 → channel-group 4
+interface range GigabitEthernet1/0/1 - 2
+channel-group 4 mode active
+no shutdown
+exit
+interface port-channel 4
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+end
+write memory
+```
+
+**SW1**
+```
+enable
+configure terminal
+
+! Hacia MS9 → channel-group 5
+interface range GigabitEthernet0/1 - 2
+channel-group 5 mode active
+no shutdown
+exit
+interface port-channel 5
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia PC1 → VLAN 10 Naranja
+interface FastEthernet0/1
+switchport mode access
+switchport access vlan 10
+no shutdown
+exit
+
+! Hacia PC2 → VLAN 10 VERDE
+interface FastEthernet0/2
+switchport mode access
+switchport access vlan 20
+no shutdown
+exit
+
+end
+write memory
+```
+
+**SW2**
+```
+enable
+configure terminal
+
+! Hacia MS8 → channel-group 4
+interface range GigabitEthernet0/1 - 2
+channel-group 4 mode active
+no shutdown
+exit
+interface port-channel 4
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia Laptop0 → VLAN 10 Naranja
+interface FastEthernet0/10
+switchport mode access
+switchport access vlan 20
+no shutdown
+exit
+
+! Hacia Laptop1 → VLAN 20 Verde
+interface FastEthernet0/11
+switchport mode access
+switchport access vlan 20
+no shutdown
+exit
+
+end
+write memory
+```
 ### PAgP — Edificio Derecho (3 enlaces)
 
 PAgP (Port Aggregation Protocol) es el protocolo propietario de Cisco.
 
+**MS3**
 ```
+enable
 configure terminal
-interface range GigabitEthernet1/0/X - Y
-channel-group [N] mode desirable
+
+! Hacia MS3 → Po1
+interface range GigabitEthernet1/0/1 - 3
+channel-group 1 mode desirable
+no shutdown
+exit
+interface port-channel 1
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
 no shutdown
 exit
 
-interface port-channel [N]
+end
+write memory
+```
+**MS3**
+```
+enable
+configure terminal
+
+! Hacia MS2 → Po1
+interface range GigabitEthernet1/0/1 - 3
+channel-group 1 mode desirable
+no shutdown
+exit
+interface port-channel 1
 switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia MS4 → Po2
+interface range GigabitEthernet1/0/4 - 6
+channel-group 2 mode desirable
+no shutdown
+exit
+interface port-channel 2
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+end
+write memory
+```
+
+
+**MS4**
+```
+enable
+configure terminal
+
+! Hacia MS3 → Po2
+interface range GigabitEthernet1/0/4 - 6
+channel-group 2 mode desirable
+no shutdown
+exit
+interface port-channel 2
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia MS5 → Po3
+interface range GigabitEthernet1/0/1 - 3
+channel-group 3 mode desirable
+no shutdown
+exit
+interface port-channel 3
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+end
+write memory
+
+```
+**MS5**
+```
+enable
+configure terminal
+
+! Hacia MS4 → Po3
+interface range GigabitEthernet1/0/1 - 3
+channel-group 3 mode desirable
+no shutdown
+exit
+interface port-channel 3
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia SW3 → trunk normal
+interface GigabitEthernet1/0/10
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia SW4 → trunk normal
+interface GigabitEthernet1/0/11
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+end
+write memory
+```
+
+**SW3**
+```
+enable
+configure terminal
+
+! Hacia MS5 → trunk
+interface GigabitEthernet0/1
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia Laptop2 → VLAN 40 Verde
+interface FastEthernet0/10
+switchport mode access
+switchport access vlan 40
+no shutdown
+exit
+
+! Hacia PC3 → VLAN 30 Naranja
+interface FastEthernet0/11
+switchport mode access
+switchport access vlan 30
+no shutdown
+exit
+
+end
+write memory
+```
+
+**SW4**
+```
+enable
+configure terminal
+
+! Hacia MS5 → trunk
+interface GigabitEthernet0/1
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,99
+no shutdown
+exit
+
+! Hacia Laptop3 → VLAN 40 Verde
+interface FastEthernet0/10
+switchport mode access
+switchport access vlan 40
+no shutdown
+exit
+
+! Hacia PC4 → VLAN 30 Naranja
+interface FastEthernet0/11
+switchport mode access
+switchport access vlan 30
+no shutdown
+exit
+
 end
 write memory
 ```
@@ -417,6 +908,8 @@ write memory
 show etherchannel summary
 show etherchannel detail
 ```
+
+
 
 ---
 
@@ -431,6 +924,31 @@ configure terminal
 ip routing
 router ospf 1
 network [red] [wildcard] area 0
+end
+write memory
+```
+
+**MS1**
+```
+enable
+configure terminal
+
+ip routing
+
+! Hacia MS7
+interface GigabitEthernet 1/1/2
+no switchport
+ip address 10.4.78.1 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS2
+interface GigabitEthernet 1/1/1
+no switchport
+ip address 10.4.78.5 255.255.255.252
+no shutdown
+exit
+
 end
 write memory
 ```
@@ -559,9 +1077,22 @@ switchport mode trunk
 switchport trunk allowed vlan [IDs]
 no shutdown
 ```
+## Configuración de interfaces de capa 3 (SVI)
 
-### Configuración de interfaces de capa 3 (SVI)
+### ¿Por qué estas SVIs en estos switches?
 
+El enunciado define tres capas jerárquicas para el edificio izquierdo:
+- **Core (MS9):** conecta hacia la MAN (MS7) y hacia Distribución (MS8)
+- **Distribución (MS8):** conecta hacia Acceso
+- **Acceso (SW1, SW2):** conecta dispositivos finales
+
+Sin embargo, en la topología implementada **MS9 conecta directamente a SW1** 
+(verificado con `show cdp neighbors`), por lo que MS9 actúa como gateway de 
+los dispositivos de SW1. MS8 conecta directamente a SW2, pero dado que MS9 
+ya maneja el inter-VLAN routing de ambas VLANs (10 y 20), MS8 solo necesita 
+`ip routing` para participar en OSPF y reenviar tráfico.
+
+### Sintaxis general
 ```
 interface vlan [ID]
 ip address [IP] [MASCARA]
@@ -569,5 +1100,92 @@ no shutdown
 ```
 
 ---
+
+### MS9 (Core - Edificio Izquierdo)
+Gateway de SW1. Maneja inter-VLAN routing de VLAN 10 y VLAN 20.
+```
+enable
+configure terminal
+
+ip routing
+
+! SVI VLAN 10 - Naranja IZQ - gateway de PC1
+interface vlan 10
+ip address 192.188.78.1 255.255.255.224
+no shutdown
+exit
+
+! SVI VLAN 20 - Verde IZQ - gateway de PC2
+interface vlan 20
+ip address 192.188.78.33 255.255.255.224
+no shutdown
+exit
+
+end
+write memory
+```
+
+---
+
+### MS8 (Distribución - Edificio Izquierdo)
+Conecta a SW2 y a MS9. No actúa como gateway de VLANs de usuario
+ya que MS9 maneja el inter-VLAN routing. Solo requiere `ip routing`
+para participar en OSPF.
+```
+enable
+configure terminal
+
+ip routing
+
+end
+write memory
+```
+
+---
+
+### MS5 (Distribución - Edificio Derecho)
+Gateway de SW3 y SW4. Maneja inter-VLAN routing de VLAN 30 y VLAN 40.
+```
+enable
+configure terminal
+
+ip routing
+
+! SVI VLAN 30 - Naranja DER - gateway de PC3, PC4
+interface vlan 30
+ip address 192.188.78.65 255.255.255.224
+no shutdown
+exit
+
+! SVI VLAN 40 - Verde DER - gateway de Laptop2, Laptop3
+interface vlan 40
+ip address 192.188.78.97 255.255.255.224
+no shutdown
+exit
+
+end
+write memory
+```
+
+---
+
+### MS6 (Edificio Administración)
+Gateway de PC0 Admin. Maneja la VLAN 99 exclusiva del departamento 
+de administración.
+```
+enable
+configure terminal
+
+ip routing
+
+! SVI VLAN 99 - ADMIN - gateway de PC0 Admin
+interface vlan 99
+ip address 192.188.78.129 255.255.255.240
+no shutdown
+exit
+
+end
+write memory
+```
 
 *Proyecto 1 - Chapin Red | Redes de Computadoras 2 | USAC 2026*

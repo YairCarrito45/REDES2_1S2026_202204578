@@ -951,6 +951,311 @@ exit
 
 end
 write memory
+
+enable
+configure terminal
+
+router ospf 1
+network 10.4.78.0 0.0.0.3 area 0
+network 10.4.78.4 0.0.0.3 area 0
+end
+write memory
+
+```
+
+**MS7**
+```
+enable
+configure terminal
+
+ip routing
+
+! Hacia MS1
+interface GigabitEthernet 1/1/2
+no switchport
+ip address 10.4.78.2 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS2
+interface GigabitEthernet 1/1/3
+no switchport
+ip address 10.4.78.9 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS6
+interface GigabitEthernet 1/1/1
+no switchport
+ip address 10.4.78.13 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS9 (Po1)
+interface port-channel 1
+no switchport
+ip address 10.4.78.33 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS8 (Po2)
+interface port-channel 2
+no switchport
+ip address 10.4.78.37 255.255.255.252
+no shutdown
+exit
+
+end
+write memory
+
+
+enable
+configure terminal
+
+router ospf 1
+network 10.4.78.0 0.0.0.3 area 0
+network 10.4.78.8 0.0.0.3 area 0
+network 10.4.78.12 0.0.0.3 area 0
+network 10.4.78.32 0.0.0.3 area 0
+network 10.4.78.36 0.0.0.3 area 0
+end
+write memory
+
+```
+
+**MS2**
+```
+enable
+configure terminal
+
+ip routing
+
+! Hacia MS1
+interface GigabitEthernet 1/1/1
+no switchport
+ip address 10.4.78.6 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS7
+interface GigabitEthernet 1/1/3
+no switchport
+ip address 10.4.78.10 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS6
+interface GigabitEthernet 1/1/2
+no switchport
+ip address 10.4.78.17 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS3 (Po1)
+interface port-channel 1
+no switchport
+ip address 10.4.78.21 255.255.255.252
+no shutdown
+exit
+
+end
+write memory
+
+
+enable
+configure terminal
+
+router ospf 1
+network 10.4.78.4 0.0.0.3 area 0
+network 10.4.78.8 0.0.0.3 area 0
+network 10.4.78.16 0.0.0.3 area 0
+network 10.4.78.20 0.0.0.3 area 0
+end
+write memory
+
+```
+
+
+**MS6**
+```
+enable
+configure terminal
+
+ip routing
+
+! Hacia MS7
+interface GigabitEthernet 1/1/1
+no switchport
+ip address 10.4.78.14 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS2
+interface GigabitEthernet 1/1/2
+no switchport
+ip address 10.4.78.18 255.255.255.252
+no shutdown
+exit
+
+end
+write memory
+
+
+enable
+configure terminal
+
+router ospf 1
+network 10.4.78.12 0.0.0.3 area 0
+network 10.4.78.16 0.0.0.3 area 0
+network 192.188.78.128 0.0.0.15 area 0
+end
+write memory
+
+```
+
+**MS3**
+```
+enable
+configure terminal
+
+ip routing
+
+! Hacia MS2 (Po1)
+interface port-channel 1
+no switchport
+ip address 10.4.78.22 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS4 (Po2)
+interface port-channel 2
+no switchport
+ip address 10.4.78.25 255.255.255.252
+no shutdown
+exit
+
+end
+write memory
+
+enable
+configure terminal
+
+router ospf 1
+network 10.4.78.20 0.0.0.3 area 0
+network 10.4.78.24 0.0.0.3 area 0
+end
+write memory
+```
+
+
+**MS4**
+```
+enable
+configure terminal
+
+ip routing
+
+! Hacia MS3 (Po2)
+interface port-channel 2
+no switchport
+ip address 10.4.78.26 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS5 (Po3)
+interface port-channel 3
+no switchport
+ip address 10.4.78.29 255.255.255.252
+no shutdown
+exit
+
+end
+write memory
+
+
+enable
+configure terminal
+
+router ospf 1
+network 10.4.78.24 0.0.0.3 area 0
+network 10.4.78.28 0.0.0.3 area 0
+end
+write memory
+```
+
+**MS5**
+```
+enable
+configure terminal
+
+ip routing
+
+! Hacia MS4 (Po3)
+interface port-channel 3
+no switchport
+ip address 10.4.78.30 255.255.255.252
+no shutdown
+exit
+
+end
+write memory
+```
+
+**MS9**
+```
+enable
+configure terminal
+
+! Hacia MS7 (Po1)
+interface port-channel 1
+no switchport
+ip address 10.4.78.34 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS8 (Po3)
+interface port-channel 3
+no switchport
+ip address 10.4.78.41 255.255.255.252
+no shutdown
+exit
+
+end
+write memory
+
+enable
+configure terminal
+
+router ospf 1
+network 10.4.78.32 0.0.0.3 area 0
+network 10.4.78.40 0.0.0.3 area 0
+network 192.188.78.0 0.0.0.31 area 0
+network 192.188.78.32 0.0.0.31 area 0
+end
+write memory
+```
+
+**MS8**
+```
+enable
+configure terminal
+
+! Hacia MS7 (Po2)
+interface port-channel 2
+no switchport
+ip address 10.4.78.38 255.255.255.252
+no shutdown
+exit
+
+! Hacia MS9 (Po3)
+interface port-channel 3
+no switchport
+ip address 10.4.78.42 255.255.255.252
+no shutdown
+exit
+
+end
+write memory
 ```
 
 **Verificación:**

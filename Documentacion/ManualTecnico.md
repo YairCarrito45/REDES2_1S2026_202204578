@@ -1,165 +1,191 @@
-# Proyecto 1 - Chapin Red
-### Redes de Computadoras 2 | Universidad San Carlos de Guatemala
-**Estudiante** Estiben Yair Lopz Leveron
-**Carné:** 202204578  
-**Curso:** Redes de Computadoras 2  
-**Semestre:** 1S 2026  
+# Proyecto 1 --- Chapin Red
 
----
+### Redes de Computadoras 2
 
-## Índice
-1. [Descripción del Proyecto](#descripción-del-proyecto)
-2. [Topología de Red](#topología-de-red)
-3. [Fase 1 - Planificación y Subnetting](#fase-1---planificación-y-subnetting)
-4. [VLANs](#vlans)
-5. [VTP - VLAN Trunking Protocol](#vtp---vlan-trunking-protocol)
-6. [Agregación de Enlaces (LACP y PAgP)](#agregación-de-enlaces-lacp-y-pagp)
-7. [Enrutamiento Dinámico (OSPF)](#enrutamiento-dinámico-ospf)
-8. [DHCP](#dhcp)
-9. [ACLs - Control de Acceso](#acls---control-de-acceso)
-10. [Comandos Principales](#comandos-principales)
+Universidad de San Carlos de Guatemala\
+Facultad de Ingeniería --- Ingeniería en Ciencias y Sistemas
 
----
+**Estudiante:** Estiben Yair López Leverón\
+**Carné:** 202204578\
+**Semestre:** 1S 2026
 
-## Descripción del Proyecto
+------------------------------------------------------------------------
 
-**Chapin Red** es una empresa dedicada a proyectos de ayuda humanitaria que opera desde cuatro edificios distribuidos geográficamente. Este proyecto implementa una red corporativa multi-edificio con:
+# 1. Descripción del Proyecto
 
-- Arquitectura jerárquica de tres capas (Core, Distribución, Acceso)
-- Segmentación mediante VLANs
-- Agregación de enlaces con LACP y PAgP
-- Enrutamiento dinámico con OSPF (carné par)
-- Servidores DHCP centralizados
-- Políticas de seguridad con ACLs
+**Chapin Red** es una empresa dedicada a proyectos de ayuda humanitaria
+que opera desde cuatro edificios distribuidos geográficamente dentro de
+una misma área metropolitana.
 
----
+El objetivo del proyecto es diseñar e implementar una **infraestructura
+de red corporativa multi-edificio** utilizando **Cisco Packet Tracer**,
+aplicando conceptos de redes empresariales.
+
+La red implementa:
+
+-   Arquitectura jerárquica de tres capas
+-   Segmentación mediante VLANs
+-   Enrutamiento dinámico con OSPF
+-   Agregación de enlaces con LACP y PAgP
+-   Servidores DHCP
+-   Políticas de seguridad con ACLs
+-   Conexión MAN entre edificios
+
+------------------------------------------------------------------------
+
+# 2. Topología de Red
+
+La red está compuesta por **cuatro edificios interconectados** mediante
+switches multicapa Cisco.
 
 ## Topología de Red
 ![alt text](image.png)
 
-### Dispositivos utilizados
+## Dispositivos utilizados
 
-| Switch | Modelo | Rol | Edificio |
-|--------|--------|-----|----------|
-| MS1 | Cisco 3650-24PS | MAN - Switch Central | Central |
-| MS7 | Cisco 3650-24PS | MAN - Switch Izquierdo | Izquierdo |
-| MS2 | Cisco 3650-24PS | MAN - Switch Derecho | Derecho |
-| MS6 | Cisco 3650-24PS | MAN - Switch Admin | Admin |
-| MS9 | Cisco 3560-24PS | Core | Izquierdo |
-| MS8 | Cisco 3560-24PS | Distribución | Izquierdo |
-| MS4 | Cisco 3560-24PS | Core/Distribución | Derecho |
-| MS5 | Cisco 3560-24PS | Distribución | Derecho |
-| SW1 | Cisco 2960 | Acceso | Izquierdo |
-| SW2 | Cisco 2960 | Acceso | Izquierdo |
-| SW3 | Cisco 2960 | Acceso | Derecho |
-| SW4 | Cisco 2960 | Acceso | Derecho |
+  Switch   Modelo       Rol                  Edificio
+  -------- ------------ -------------------- ----------------
+  MS1      Cisco 3650   Switch central MAN   Central
+  MS7      Cisco 3650   Switch MAN           Izquierdo
+  MS2      Cisco 3650   Switch MAN           Derecho
+  MS6      Cisco 3650   Switch MAN           Administración
+  MS9      Cisco 3560   Core                 Izquierdo
+  MS8      Cisco 3560   Distribución         Izquierdo
+  MS4      Cisco 3560   Core/Distribución    Derecho
+  MS5      Cisco 3560   Distribución         Derecho
+  SW1      Cisco 2960   Acceso               Izquierdo
+  SW2      Cisco 2960   Acceso               Izquierdo
+  SW3      Cisco 2960   Acceso               Derecho
+  SW4      Cisco 2960   Acceso               Derecho
 
----
+------------------------------------------------------------------------
 
-## Fase 1 - Planificación y Subnetting
+# 3. Planificación y Subnetting
 
-### ¿Qué es el Subnetting?
+## Redes base
 
-El subnetting consiste en tomar una red grande y dividirla en subredes más pequeñas. Cada subred agrupa dispositivos con funciones similares, mejorando la seguridad y el rendimiento de la red.
+De acuerdo con los últimos dos dígitos del carné **78**, se asignan las
+siguientes redes:
 
-### Redes Base Asignadas
+  Red           Dirección         Uso
+  ------------- ----------------- ----------------------------------
+  Red VLAN      192.188.78.0/24   VLANs de usuarios
+  Red Routing   10.4.78.0/24      Enlaces entre switches multicapa
 
-Mi Carnet es **202204578** termina en **78**, por lo tanto:
+------------------------------------------------------------------------
 
-| Red | Dirección | Uso |
-|-----|-----------|-----|
-| Red 1 | `192.188.78.0/24` | VLANs de usuarios |
-| Red 2 | `10.4.78.0/24` | Enlaces punto a punto entre switches/routers |
+# 4. Subnetting de VLANs (VLSM)
 
-El prefijo **/24** indica que hay **254 hosts disponibles** por red:
-- Total de IPs: 2⁸ = 256
-- Menos red (`.0`) y broadcast (`.255`) = **254 hosts útiles**
+Se utilizó **VLSM** para dividir la red en cinco subredes.
 
-### Técnica utilizada: VLSM (Variable Length Subnet Mask)
+  -----------------------------------------------------------------------------------------------
+  VLAN        Nombre      Red                 Máscara           Gateway          Broadcast
+  ----------- ----------- ------------------- ----------------- ---------------- ----------------
+  10          Naranja IZQ 192.188.78.0/27     255.255.255.224   192.188.78.1     192.188.78.31
 
-VLSM permite asignar máscaras de diferente longitud a cada subred según la cantidad de hosts que necesita. Esto optimiza el uso del espacio de direccionamiento.
+  20          Verde IZQ   192.188.78.32/27    255.255.255.224   192.188.78.33    192.188.78.63
 
----
+  30          Naranja DER 192.188.78.64/27    255.255.255.224   192.188.78.65    192.188.78.95
 
-### Parte A: Subnetting de VLANs — `192.188.78.0/24`
+  40          Verde DER   192.188.78.96/27    255.255.255.224   192.188.78.97    192.188.78.127
 
-Se necesitan **5 subredes**, una por cada VLAN. Se ordenan de mayor a menor para aplicar VLSM correctamente.
+  99          ADMIN       192.188.78.128/28   255.255.255.240   192.188.78.129   192.188.78.143
+  -----------------------------------------------------------------------------------------------
 
-#### Cálculo de máscaras:
+------------------------------------------------------------------------
 
-**Para /27 (VLANs grandes):**
-```
-Bits de host = 32 - 27 = 5 bits
-Total IPs    = 2⁵ = 32
-Hosts útiles = 32 - 2 = 30 hosts
-Máscara      = 255.255.255.224
-```
+# 5. Subnetting de Enlaces (/30)
 
-**Para /28 (VLAN ADMIN):**
-```
-Bits de host = 32 - 28 = 4 bits
-Total IPs    = 2⁴ = 16
-Hosts útiles = 16 - 2 = 14 hosts
-Máscara      = 255.255.255.240
-```
+Los enlaces entre dispositivos de capa 3 utilizan subredes **/30**.
 
-#### Tabla de subredes para VLANs:
+  Enlace       Red             IP A         IP B
+  ------------ --------------- ------------ ------------
+  MS1 -- MS7   10.4.78.0/30    10.4.78.1    10.4.78.2
+  MS1 -- MS2   10.4.78.4/30    10.4.78.5    10.4.78.6
+  MS1 -- MS3   10.4.78.8/30    10.4.78.9    10.4.78.10
+  MS7 -- MS6   10.4.78.12/30   10.4.78.13   10.4.78.14
+  MS2 -- MS6   10.4.78.16/30   10.4.78.17   10.4.78.18
+  MS3 -- MS6   10.4.78.20/30   10.4.78.21   10.4.78.22
 
-| # | VLAN | Red | Máscara | Gateway | Rango DHCP | Broadcast | Hosts |
-|---|------|-----|---------|---------|------------|-----------|-------|
-| 1 | VLAN 10 - Naranja IZQ | 192.188.78.0/27 | 255.255.255.224 | 192.188.78.1 | .2 → .30 | 192.188.78.31 | 30 |
-| 2 | VLAN 20 - Verde IZQ | 192.188.78.32/27 | 255.255.255.224 | 192.188.78.33 | .34 → .62 | 192.188.78.63 | 30 |
-| 3 | VLAN 30 - Naranja DER | 192.188.78.64/27 | 255.255.255.224 | 192.188.78.65 | .66 → .94 | 192.188.78.95 | 30 |
-| 4 | VLAN 40 - Verde DER | 192.188.78.96/27 | 255.255.255.224 | 192.188.78.97 | .98 → .126 | 192.188.78.127 | 30 |
-| 5 | VLAN 99 - ADMIN | 192.188.78.128/28 | 255.255.255.240 | 192.188.78.129 | .130 → .142 | 192.188.78.143 | 14 |
+------------------------------------------------------------------------
 
----
+# 6. VLANs
 
-### Parte B: Subnetting de enlaces — `10.4.78.0/24`
+  VLAN   Nombre                               Departamento
+  ------ ------------------------------------ ----------------
+  10     VLAN_Naranja_EdificioIZQ_202204578   Proyectos
+  20     VLAN_Verde_EdificioIZQ_202204578     Coordinación
+  30     VLAN_Naranja_EdificioDER_202204578   Proyectos
+  40     VLAN_Verde_EdificioDER_202204578     Coordinación
+  99     VLAN_ADMIN_202204578                 Administración
 
-Los enlaces punto a punto entre switches multicapa usan subredes **/30**, que proveen exactamente 2 hosts útiles (uno para cada extremo del enlace).
+------------------------------------------------------------------------
 
-**Para /30:**
-```
-Bits de host = 32 - 30 = 2 bits
-Total IPs    = 2² = 4
-Hosts útiles = 4 - 2 = 2 hosts
-Máscara      = 255.255.255.252
-```
+# 7. VTP (VLAN Trunking Protocol)
 
-#### Tabla de enlaces punto a punto:
+  Parámetro    Valor
+  ------------ -----------
+  Dominio      ChapinRed
+  Contraseña   chapin123
+  Versión      2
 
-| # | Enlace | Red | IP Lado A | IP Lado B | Broadcast |
-|---|--------|-----|-----------|-----------|-----------|
-| 1 | MS1 ↔ MS7 | 10.4.78.0/30 | 10.4.78.1 (MS1) | 10.4.78.2 (MS7) | 10.4.78.3 |
-| 2 | MS1 ↔ MS2 | 10.4.78.4/30 | 10.4.78.5 (MS1) | 10.4.78.6 (MS2) | 10.4.78.7 |
-| 3 | MS1 ↔ MS3 | 10.4.78.8/30 | 10.4.78.9 (MS1) | 10.4.78.10 (MS3) | 10.4.78.11 |
-| 4 | MS7 ↔ MS6 | 10.4.78.12/30 | 10.4.78.13 (MS7) | 10.4.78.14 (MS6) | 10.4.78.15 |
-| 5 | MS2 ↔ MS6 | 10.4.78.16/30 | 10.4.78.17 (MS2) | 10.4.78.18 (MS6) | 10.4.78.19 |
-| 6 | MS3 ↔ MS6 | 10.4.78.20/30 | 10.4.78.21 (MS3) | 10.4.78.22 (MS6) | 10.4.78.23 |
-| 7 | MS7 ↔ MS9 | 10.4.78.24/30 | 10.4.78.25 (MS7) | 10.4.78.26 (MS9) | 10.4.78.27 |
-| 8 | MS7 ↔ MS8 | 10.4.78.28/30 | 10.4.78.29 (MS7) | 10.4.78.30 (MS8) | 10.4.78.31 |
-| 9 | MS9 ↔ MS8 | 10.4.78.32/30 | 10.4.78.33 (MS9) | 10.4.78.34 (MS8) | 10.4.78.35 |
-| 10 | MS2 ↔ MS4 | 10.4.78.36/30 | 10.4.78.37 (MS2) | 10.4.78.38 (MS4) | 10.4.78.39 |
-| 11 | MS3 ↔ MS4 | 10.4.78.40/30 | 10.4.78.41 (MS3) | 10.4.78.42 (MS4) | 10.4.78.43 |
-| 12 | MS4 ↔ MS5 | 10.4.78.44/30 | 10.4.78.45 (MS4) | 10.4.78.46 (MS5) | 10.4.78.47 |
+------------------------------------------------------------------------
 
----
+# 8. Agregación de Enlaces
 
-## VLANs
+## LACP
 
-### Numeración y nomenclatura
+Configuración utilizada para agregación en el edificio izquierdo.
 
-Los nombres siguen la convención requerida: `VLAN_[Color]_Edificio[IZQ/DER]_[Carnet]`
+## PAgP
 
-| VLAN ID | Nombre | Departamento | Edificio |
-|---------|--------|--------------|----------|
-| 10 | VLAN_Naranja_EdificioIZQ_202204578 | Proyectos | Izquierdo |
-| 20 | VLAN_Verde_EdificioIZQ_202204578 | Coordinación | Izquierdo |
-| 30 | VLAN_Naranja_EdificioDER_202204578 | Proyectos | Derecho |
-| 40 | VLAN_Verde_EdificioDER_202204578 | Coordinación | Derecho |
-| 99 | VLAN_ADMIN_202204578 | Administración | Admin |
----
+Configuración utilizada para agregación en el edificio derecho.
+
+------------------------------------------------------------------------
+
+# 9. Enrutamiento Dinámico
+
+Debido a que el carné **202204578 es par**, se utiliza **OSPF**.
+
+Configuración base:
+
+router ospf 1 network \[red\] \[wildcard\] area 0
+
+------------------------------------------------------------------------
+
+# 10. DHCP
+
+Se configuraron dos servidores DHCP.
+
+**DHCP1 --- Edificio Izquierdo** - VLAN10 - VLAN20
+
+**DHCP2 --- Edificio Derecho** - VLAN30 - VLAN40 - VLAN99
+
+------------------------------------------------------------------------
+
+# 11. ACLs
+
+Las ACLs implementan las políticas de seguridad:
+
+-   Naranja ↔ Naranja permitido
+-   Verde ↔ Verde permitido
+-   Naranja ↔ Verde bloqueado
+-   VLANs → ADMIN bloqueado
+-   ADMIN → todas permitido
+
+------------------------------------------------------------------------
+
+# 12. Comandos de Verificación
+
+show vlan brief\
+show vtp status\
+show interfaces trunk\
+show etherchannel summary\
+show ip route\
+show ip ospf neighbor\
+show access-lists
+
+------------------------------------------------------------------------
 
 ## VTP - VLAN Trunking Protocol
 
@@ -1266,39 +1292,222 @@ show ip route ospf
 
 ---
 
+
 ## DHCP
 
-El protocolo DHCP asigna automáticamente direcciones IP a los dispositivos finales.
+El **Dynamic Host Configuration Protocol (DHCP)** permite asignar automáticamente direcciones IP, máscara de subred, puerta de enlace y otros parámetros de red a los dispositivos finales, evitando configuraciones manuales en cada host.
 
-### Servidor DHCP Izquierdo (DHCP1)
+En esta topología se utilizan **dos servidores DHCP**, uno para cada edificio, con el objetivo de distribuir la carga y mantener una organización clara de las redes.
 
-Atiende las VLANs del edificio izquierdo:
+---
 
-| Pool | Red | Gateway | Rango |
-|------|-----|---------|-------|
-| VLAN10_Naranja_IZQ | 192.188.78.0/27 | 192.188.78.1 | .2 → .30 |
-| VLAN20_Verde_IZQ | 192.188.78.32/27 | 192.188.78.33 | .34 → .62 |
+# Servidor DHCP Izquierdo (DHCP1)
 
-### Servidor DHCP Derecho (DHCP2)
+Este servidor atiende las VLAN correspondientes al **edificio izquierdo**.
 
-Atiende las VLANs del edificio derecho:
+| Pool | Red | Gateway | Rango de Hosts |
+|-----|-----|-----|-----|
+| VLAN10_Naranja_IZQ | 192.188.78.0 /27 | 192.188.78.1 | 192.188.78.2 → 192.188.78.30 |
+| VLAN20_Verde_IZQ | 192.188.78.32 /27 | 192.188.78.33 | 192.188.78.34 → 192.188.78.62 |
 
-| Pool | Red | Gateway | Rango |
-|------|-----|---------|-------|
-| VLAN30_Naranja_DER | 192.188.78.64/27 | 192.188.78.65 | .66 → .94 |
-| VLAN40_Verde_DER | 192.188.78.96/27 | 192.188.78.97 | .98 → .126 |
-| VLAN99_ADMIN | 192.188.78.128/28 | 192.188.78.129 | .130 → .142 |
+### Configuración en DHCP1 (Packet Tracer)
 
-### DHCP Relay (IP Helper)
+Pool VLAN10:
 
-Permite que las solicitudes DHCP de los dispositivos lleguen al servidor aunque estén en diferente subred.
+- Pool Name: `VLAN10_Naranja_IZQ`
+- Default Gateway: `192.188.78.1`
+- Start IP Address: `192.188.78.2`
+- Subnet Mask: `255.255.255.224`
+- Maximum Users: `29`
+
+Pool VLAN20:
+
+- Pool Name: `VLAN20_Verde_IZQ`
+- Default Gateway: `192.188.78.33`
+- Start IP Address: `192.188.78.34`
+- Subnet Mask: `255.255.255.224`
+- Maximum Users: `29`
+
+---
+
+# Servidor DHCP Derecho (DHCP2)
+
+Este servidor atiende las VLAN correspondientes al **edificio derecho** y la red de administración.
+
+| Pool | Red | Gateway | Rango de Hosts |
+|-----|-----|-----|-----|
+| VLAN30_Naranja_DER | 192.188.78.64 /27 | 192.188.78.65 | 192.188.78.66 → 192.188.78.94 |
+| VLAN40_Verde_DER | 192.188.78.96 /27 | 192.188.78.97 | 192.188.78.98 → 192.188.78.126 |
+| VLAN99_ADMIN | 192.188.78.128 /28 | 192.188.78.129 | 192.188.78.130 → 192.188.78.142 |
+
+### Configuración en DHCP2 (Packet Tracer)
+
+Pool VLAN30:
+
+- Pool Name: `VLAN30_Naranja_DER`
+- Default Gateway: `192.188.78.65`
+- Start IP Address: `192.188.78.66`
+- Subnet Mask: `255.255.255.224`
+- Maximum Users: `29`
+
+Pool VLAN40:
+
+- Pool Name: `VLAN40_Verde_DER`
+- Default Gateway: `192.188.78.97`
+- Start IP Address: `192.188.78.98`
+- Subnet Mask: `255.255.255.224`
+- Maximum Users: `29`
+
+Pool VLAN99:
+
+- Pool Name: `VLAN99_ADMIN`
+- Default Gateway: `192.188.78.129`
+- Start IP Address: `192.188.78.130`
+- Subnet Mask: `255.255.255.240`
+- Maximum Users: `11`
+
+---
+
+# DHCP Relay (IP Helper)
+
+Las solicitudes DHCP son **broadcast**, lo que significa que normalmente no pueden atravesar routers o switches capa 3.
+
+Para permitir que los dispositivos de diferentes VLAN puedan obtener dirección IP desde los servidores DHCP, se implementa **DHCP Relay** mediante el comando:
 
 ```
-interface vlan [ID]
-ip helper-address [IP_SERVIDOR_DHCP]
+ip helper-address
+```
+
+Este comando reenvía las solicitudes DHCP hacia el servidor correspondiente.
+
+---
+
+# Configuración DHCP Relay en los switches de capa 3
+
+## MS9 (Edificio Izquierdo)
+
+MS9 gestiona las VLAN del edificio izquierdo.
+
+```bash
+enable
+configure terminal
+
+interface vlan 10
+ip helper-address 192.188.78.146
+no shutdown
+exit
+
+interface vlan 20
+ip helper-address 192.188.78.146
+no shutdown
+exit
+
+end
+write memory
 ```
 
 ---
+
+## MS5 (Edificio Derecho)
+
+MS5 gestiona las VLAN del edificio derecho.
+
+```bash
+enable
+configure terminal
+
+interface vlan 30
+ip helper-address 192.188.78.150
+no shutdown
+exit
+
+interface vlan 40
+ip helper-address 192.188.78.150
+no shutdown
+exit
+
+end
+write memory
+```
+
+---
+
+## MS6 (Red de Administración)
+
+MS6 actúa como gateway de la VLAN de administración.
+
+```bash
+enable
+configure terminal
+
+interface vlan 99
+ip helper-address 192.188.78.150
+no shutdown
+exit
+
+end
+write memory
+```
+
+---
+
+# Configuración en los dispositivos finales
+
+Los dispositivos finales (PCs y laptops) se configuran para obtener dirección IP automáticamente.
+
+En Packet Tracer:
+
+```
+Desktop
+IP Configuration
+DHCP
+```
+
+El servidor DHCP asigna automáticamente:
+
+- Dirección IP
+- Máscara de subred
+- Puerta de enlace
+- DNS
+
+---
+
+# Comandos de verificación utilizados
+
+Para comprobar el funcionamiento del DHCP y de la red se utilizaron los siguientes comandos:
+
+Ver interfaces VLAN:
+
+```
+show ip interface brief
+```
+
+Ver rutas aprendidas por OSPF:
+
+```
+show ip route
+```
+
+Ver enlaces troncales:
+
+```
+show interfaces trunk
+```
+
+Ver estado de EtherChannel:
+
+```
+show etherchannel summary
+```
+
+Probar conectividad entre dispositivos:
+
+```
+ping [direccion IP]
+```
+
+---
+
 
 ## ACLs - Control de Acceso
 

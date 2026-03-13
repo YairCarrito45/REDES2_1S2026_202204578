@@ -48,7 +48,7 @@ El objetivo del proyecto es diseñar e implementar una **infraestructura de red 
 
 ## 2. Topología de Red
 
-![Topología General](image.png)
+![alt text](image-1.png)
 
 ### Dispositivos utilizados
 

@@ -1155,153 +1155,158 @@ show ip interface vlan 99
 ```
 
 ---
+# 11. ACLs --- Control de Acceso
 
-## 11. ACLs — Control de Acceso
+Las ACLs controlan qué tráfico puede pasar entre VLANs, implementando
+las políticas de seguridad de Chapin Red.
 
-Las ACLs controlan qué tráfico puede pasar entre VLANs, implementando las políticas de seguridad de Chapin Red.
+## Políticas requeridas
 
-### Políticas requeridas
+  VLAN Origen      VLAN Destino     Permitido
+  ---------------- ---------------- ------------------------------------------
+  Naranja IZQ      Naranja DER      Permitido
+  Naranja          Verde            Bloqueado
+  Naranja          ADMIN            Bloqueado
+  Verde IZQ        Verde DER        Permitido
+  Verde            Naranja          Bloqueado
+  Verde            ADMIN            Bloqueado
+  ADMIN            Cualquier VLAN   Permitido (puede iniciar)
+  Cualquier VLAN   ADMIN            Bloqueado (no puede iniciar hacia ADMIN)
 
-| VLAN Origen | VLAN Destino | Permitido |
-|-------------|-------------|-----------|
-| Naranja IZQ | Naranja DER | Permitido |
-| Naranja | Verde | Bloqueado |
-| Naranja | ADMIN | Bloqueado |
-| Verde IZQ | Verde DER | Permitido |
-| Verde | Naranja | Bloqueado |
-| Verde | ADMIN | Bloqueado |
-| ADMIN | Cualquier VLAN | Permitido (puede iniciar) |
-| Cualquier VLAN | ADMIN | Bloqueado (no puede iniciar hacia ADMIN) |
+------------------------------------------------------------------------
 
-### Consideraciones de Seguridad
+## Consideraciones de Seguridad
 
-Las ACLs implementadas siguen los siguientes principios:
+-   **Mínimo privilegio:** se permite únicamente el tráfico
+    estrictamente necesario entre VLANs autorizadas.
+-   **Especificidad:** cada regla define con precisión la red de origen
+    y destino usando wildcard masks.
+-   **Documentación:** se utilizan `remark` para explicar cada regla.
+-   **Control unidireccional para ADMIN:** VLAN 99 puede iniciar
+    comunicación hacia cualquier VLAN, pero no puede recibir conexiones
+    iniciadas desde otras VLANs.
+-   **Aplicación en el gateway:** las ACLs se aplican en las interfaces
+    SVI de los switches multicapa que actúan como gateway.
 
-- **Minimo privilegio:** se permite unicamente el trafico estrictamente necesario entre VLANs autorizadas. Todo lo demas es bloqueado por la regla implicita `deny ip any any`.
-- **Especificidad:** cada regla define con precision la red de origen y destino usando la direccion de red y su wildcard, evitando rangos amplios que puedan permitir trafico no deseado.
-- **Documentacion con remark:** cada ACL incluye comentarios (`remark`) que explican su proposito, facilitando la administracion y auditoria de la red.
-- **Control unidireccional para ADMIN:** la VLAN 99 puede iniciar comunicacion hacia cualquier VLAN, pero ninguna otra VLAN puede iniciar trafico hacia ADMIN. Esto se logra aplicando la ACL en direccion `in` sobre la SVI de VLAN 99.
-- **Aplicacion en el gateway:** las ACLs se aplican en las interfaces SVI de los switches multicapa que actuan como gateway, garantizando que el filtrado ocurra en el punto de enrutamiento inter-VLAN.
+------------------------------------------------------------------------
 
----
+# Definición de ACLs
 
-### Definicion de ACLs
+## ACL_NARANJA
 
-**ACL_NARANJA**
-Permite comunicacion unicamente entre VLAN Naranja del Edificio Izquierdo (192.188.78.0/27) y VLAN Naranja del Edificio Derecho (192.188.78.64/27). Bloquea cualquier otro trafico.
-Aplicacion: interfaz VLAN 10 y VLAN 30 en direccion `out`.
+Permite comunicación únicamente entre VLAN Naranja de ambos edificios.
 
-```
-ip access-list extended ACL_NARANJA
- remark Permite trafico de Naranja IZQ hacia Naranja DER
- permit ip 192.188.78.0 0.0.0.31 192.188.78.64 0.0.0.31
- remark Permite trafico de Naranja DER hacia Naranja IZQ
- permit ip 192.188.78.64 0.0.0.31 192.188.78.0 0.0.0.31
- remark Bloquea cualquier otro trafico
- deny ip any any
-```
+    ip access-list extended ACL_NARANJA
+     remark Permite trafico de Naranja IZQ hacia Naranja DER
+     permit ip 192.188.78.0 0.0.0.31 192.188.78.64 0.0.0.31
+     remark Permite trafico de Naranja DER hacia Naranja IZQ
+     permit ip 192.188.78.64 0.0.0.31 192.188.78.0 0.0.0.31
+     remark Bloquea cualquier otro trafico
+     deny ip any any
 
----
+------------------------------------------------------------------------
 
-**ACL_VERDE**
-Permite comunicacion unicamente entre VLAN Verde del Edificio Izquierdo (192.188.78.32/27) y VLAN Verde del Edificio Derecho (192.188.78.96/27). Bloquea cualquier otro trafico.
-Aplicacion: interfaz VLAN 20 y VLAN 40 en direccion `out`.
+## ACL_VERDE
 
-```
-ip access-list extended ACL_VERDE
- remark Permite trafico de Verde IZQ hacia Verde DER
- permit ip 192.188.78.32 0.0.0.31 192.188.78.96 0.0.0.31
- remark Permite trafico de Verde DER hacia Verde IZQ
- permit ip 192.188.78.96 0.0.0.31 192.188.78.32 0.0.0.31
- remark Bloquea cualquier otro trafico
- deny ip any any
-```
+Permite comunicación únicamente entre VLAN Verde de ambos edificios.
 
----
+    ip access-list extended ACL_VERDE
+     remark Permite trafico de Verde IZQ hacia Verde DER
+     permit ip 192.188.78.32 0.0.0.31 192.188.78.96 0.0.0.31
+     remark Permite trafico de Verde DER hacia Verde IZQ
+     permit ip 192.188.78.96 0.0.0.31 192.188.78.32 0.0.0.31
+     remark Bloquea cualquier otro trafico
+     deny ip any any
 
-**ACL_ADMIN_IN**
-Bloquea trafico iniciado desde cualquier VLAN de usuario hacia VLAN ADMIN (192.188.78.128/28). ADMIN puede iniciar comunicacion hacia cualquier VLAN, pero no puede recibir conexiones iniciadas desde otras VLANs (control unidireccional).
-Aplicacion: interfaz VLAN 99 en direccion `in`.
+------------------------------------------------------------------------
 
-```
-ip access-list extended ACL_ADMIN_IN
- remark Bloquea acceso desde Naranja IZQ hacia ADMIN
- deny ip 192.188.78.0 0.0.0.31 192.188.78.128 0.0.0.15
- remark Bloquea acceso desde Verde IZQ hacia ADMIN
- deny ip 192.188.78.32 0.0.0.31 192.188.78.128 0.0.0.15
- remark Bloquea acceso desde Naranja DER hacia ADMIN
- deny ip 192.188.78.64 0.0.0.31 192.188.78.128 0.0.0.15
- remark Bloquea acceso desde Verde DER hacia ADMIN
- deny ip 192.188.78.96 0.0.0.31 192.188.78.128 0.0.0.15
- remark Permite cualquier otro trafico (salida de ADMIN)
- permit ip any any
-```
+## ACL_ADMIN_IN
 
-### Aplicación de ACLs
+Bloquea tráfico iniciado desde cualquier VLAN de usuario hacia la VLAN
+ADMIN.
 
-**En MS9** (gateway VLAN 10 y 20 — SW1):
-```
-enable
-configure terminal
+    ip access-list extended ACL_ADMIN_IN
+     remark Bloquea acceso desde Naranja IZQ hacia ADMIN
+     deny ip 192.188.78.0 0.0.0.31 192.188.78.128 0.0.0.15
+     remark Bloquea acceso desde Verde IZQ hacia ADMIN
+     deny ip 192.188.78.32 0.0.0.31 192.188.78.128 0.0.0.15
+     remark Bloquea acceso desde Naranja DER hacia ADMIN
+     deny ip 192.188.78.64 0.0.0.31 192.188.78.128 0.0.0.15
+     remark Bloquea acceso desde Verde DER hacia ADMIN
+     deny ip 192.188.78.96 0.0.0.31 192.188.78.128 0.0.0.15
+     remark Permite trafico iniciado desde ADMIN
+     permit ip any any
 
-interface vlan 10
-ip access-group ACL_NARANJA out
-exit
+------------------------------------------------------------------------
 
-interface vlan 20
-ip access-group ACL_VERDE out
-exit
+# Aplicación de ACLs
 
-end
-write memory
-```
+## En MS9 (gateway VLAN10 y VLAN20)
 
-**En MS8** (gateway VLAN 10 y 20 — SW2):
-```
-enable
-configure terminal
+    enable
+    configure terminal
 
-interface vlan 10
-ip access-group ACL_NARANJA out
-exit
+    interface vlan 10
+     ip access-group ACL_NARANJA out
+    exit
 
-interface vlan 20
-ip access-group ACL_VERDE out
-exit
+    interface vlan 20
+     ip access-group ACL_VERDE out
+    exit
 
-end
-write memory
-```
+    end
+    write memory
 
-**En MS5** (gateway VLAN 30 y 40):
-```
-enable
-configure terminal
+------------------------------------------------------------------------
 
-interface vlan 30
-ip access-group ACL_NARANJA out
-exit
+## En MS8 (gateway VLAN10 y VLAN20)
 
-interface vlan 40
-ip access-group ACL_VERDE out
-exit
+    enable
+    configure terminal
 
-end
-write memory
-```
+    interface vlan 10
+     ip access-group ACL_NARANJA out
+    exit
 
-**En MS6** (gateway VLAN 99 — Admin):
-```
-enable
-configure terminal
+    interface vlan 20
+     ip access-group ACL_VERDE out
+    exit
 
-interface vlan 99
-ip access-group ACL_ADMIN_IN in
-exit
+    end
+    write memory
 
-end
-write memory
-```
+------------------------------------------------------------------------
+
+## En MS5 (gateway VLAN30 y VLAN40)
+
+    enable
+    configure terminal
+
+    interface vlan 30
+     ip access-group ACL_NARANJA out
+    exit
+
+    interface vlan 40
+     ip access-group ACL_VERDE out
+    exit
+
+    end
+    write memory
+
+------------------------------------------------------------------------
+
+## En MS6 (gateway VLAN99 - ADMIN)
+
+    enable
+    configure terminal
+
+    interface vlan 99
+     ip access-group ACL_ADMIN_IN in
+    exit
+
+    end
+    write memory
+
 
 ### Pruebas de conectividad esperadas
 

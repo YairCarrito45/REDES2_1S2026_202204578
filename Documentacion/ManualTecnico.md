@@ -1394,5 +1394,199 @@ show spanning-tree vlan 40
 
 ---
 
+# Pruebas de Tolerancia a Fallos
+
+## Descripción
+
+Para validar la redundancia de los enlaces agregados en la red, se
+realizaron pruebas de tolerancia a fallos sobre los EtherChannel
+configurados con **LACP**. El objetivo de estas pruebas fue demostrar
+que, si uno de los enlaces físicos que forman parte del canal falla o se
+desconecta, el **Port-Channel permanece activo** y el tráfico se
+redistribuye automáticamente entre los enlaces restantes.
+
+Estas pruebas permiten comprobar que la red mantiene la conectividad y
+evita interrupciones en la comunicación, cumpliendo con el principio de
+**alta disponibilidad**.
+
+------------------------------------------------------------------------
+
+# Metodología de la prueba
+
+La prueba se realizó siguiendo los siguientes pasos:
+
+1.  Verificar el estado inicial del EtherChannel.
+2.  Confirmar que los puertos miembros están agregados correctamente al
+    canal.
+3.  Realizar pruebas de conectividad entre dispositivos.
+4.  Simular una falla física desconectando uno de los enlaces.
+5.  Verificar nuevamente el estado del EtherChannel.
+6.  Confirmar que la comunicación continúa funcionando.
+
+------------------------------------------------------------------------
+
+# Verificación inicial del EtherChannel
+
+Antes de simular la falla, se verificó el estado de los canales
+utilizando el comando:
+
+    show etherchannel summary
+
+Este comando permite identificar: - Los **Port-Channel activos** - El
+**protocolo utilizado (LACP o PAgP)** - Los **puertos miembros del
+canal** - El **estado de cada enlace**
+
+------------------------------------------------------------------------
+
+# Resultado de la prueba
+
+![alt text](image-3.png)
+------------------------------------------------------------------------
+
+# Interpretación del resultado
+
+En el EtherChannel **Po1** se observa lo siguiente:
+
+-   **Gig1/0/1 (D)**\
+    El puerto aparece en estado **Down**, lo que indica que el enlace
+    fue desconectado o deshabilitado.
+
+-   **Gig1/0/2 (P) y Gig1/0/3 (P)**\
+    Estos puertos continúan **participando en el Port-Channel**, por lo
+    que el canal sigue teniendo enlaces activos.
+
+-   **Po1 (RU)**\
+    El Port-Channel se mantiene en estado **RU**, lo que significa:
+
+    -   **R:** Port-channel de **Layer 3**\
+    -   **U:** El canal está **en uso y funcionando**
+
+Esto demuestra que el EtherChannel continúa operativo a pesar de la
+falla de uno de sus enlaces físicos.
+
+------------------------------------------------------------------------
+
+# Comprobación de conectividad
+
+Durante la prueba se realizaron **pings entre dispositivos de la red**
+mientras el enlace se encontraba desconectado.
+
+La comunicación se mantuvo activa, lo que confirma que el tráfico fue
+**redistribuido automáticamente a través de los enlaces restantes del
+EtherChannel**.
+
+------------------------------------------------------------------------
+
+# Conclusión
+
+La prueba de tolerancia a fallos demostró que el EtherChannel
+configurado con **LACP** proporciona redundancia en los enlaces de la
+red.
+
+Al simular la caída de uno de los enlaces físicos, el **Port-Channel
+permaneció activo**, permitiendo que el tráfico continuara circulando
+por los enlaces restantes sin interrumpir la conectividad.
+
+Esto confirma que la agregación de enlaces mejora la **disponibilidad y
+resiliencia de la red**, evitando fallas de comunicación ante la pérdida
+de un enlace individual.
+
+
+# Pruebas de Tolerancia a Fallos -- EtherChannel PAgP
+
+## Descripción
+
+Para validar la redundancia de los enlaces agregados configurados con
+**PAgP**, se realizaron pruebas de tolerancia a fallos simulando la
+caída de uno de los enlaces físicos pertenecientes al EtherChannel.
+
+El objetivo de esta prueba fue demostrar que, ante la falla de un enlace
+físico, el **Port-Channel continúa operativo** utilizando los enlaces
+restantes, permitiendo mantener la conectividad entre los dispositivos
+de la red.
+
+Estas pruebas confirman que la agregación de enlaces mejora la
+**disponibilidad y resiliencia de la red**.
+
+------------------------------------------------------------------------
+
+# Metodología de la prueba
+
+La prueba se ejecutó siguiendo los siguientes pasos:
+
+1.  Verificar el estado inicial del EtherChannel.
+2.  Confirmar que los puertos miembros estén correctamente agregados al
+    canal.
+3.  Realizar pruebas de conectividad entre dispositivos de la red.
+4.  Simular una falla desconectando uno de los enlaces físicos.
+5.  Verificar nuevamente el estado del EtherChannel.
+6.  Confirmar que la comunicación continúe funcionando a través de los
+    enlaces restantes.
+
+------------------------------------------------------------------------
+
+# Verificación inicial del EtherChannel
+
+Para verificar el estado del canal se utilizó el comando:
+
+    show etherchannel summary
+
+Este comando permite visualizar:
+
+-   Los **Port-Channel configurados**
+-   El **protocolo de agregación utilizado**
+-   Los **puertos que pertenecen al canal**
+-   El **estado de cada enlace**
+
+------------------------------------------------------------------------
+
+# Resultado de la prueba
+
+![alt text](image-2.png)
+------------------------------------------------------------------------
+
+# Interpretación del resultado
+
+En el EtherChannel **Po2** se observa lo siguiente:
+
+-   **Gig1/0/10 (D)**\
+    El puerto aparece en estado **Down**, indicando que el enlace fue
+    desconectado o deshabilitado.
+
+-   **Gig1/0/11 (P) y Gig1/0/12 (P)**\
+    Estos puertos permanecen activos dentro del Port-Channel.
+
+-   **Po2 (SU)**\
+    El canal se mantiene activo y en uso.
+
+Esto confirma que el EtherChannel continúa funcionando aun cuando uno de
+sus enlaces físicos falla.
+
+------------------------------------------------------------------------
+
+# Verificación de conectividad
+
+Durante la prueba se realizaron **pings entre dispositivos de la red**
+mientras el enlace se encontraba desconectado.
+
+La comunicación se mantuvo activa, lo que demuestra que el tráfico fue
+**redistribuido automáticamente entre los enlaces restantes del
+EtherChannel**.
+
+------------------------------------------------------------------------
+
+# Conclusión
+
+La prueba de tolerancia a fallos demostró que el EtherChannel
+configurado con **PAgP** mantiene la conectividad de la red incluso
+cuando uno de los enlaces físicos falla.
+
+El Port-Channel permanece activo y el tráfico se redirige
+automáticamente a los enlaces restantes, garantizando **redundancia y
+continuidad del servicio** en la infraestructura de red.
+
+
+
+
 *Proyecto 1 — Chapin Red | Redes de Computadoras 2 | USAC 1S 2026*
 *Estiben Yair López Leverón — Carné 202204578*
